@@ -27,6 +27,8 @@ class Config:
 
     led_enabled = True
     led_scroll_speed = 0.1
+    
+    console_enabled = False
 
     def __init__(self, **kw):
         for k, v in kw.iteritems():

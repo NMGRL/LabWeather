@@ -24,13 +24,13 @@ import time
 import requests
 import yaml
 
-from weather.config import Config
+from config import Config
 
 
 def bootstrap():
-    from sensehat import Sensehat
+    from sense_hat import SenseHat
 
-    dev = Sensehat()
+    dev = SenseHat()
 
     cfg = get_configuration()
     start_service(dev, cfg)
@@ -44,9 +44,10 @@ def get_configuration():
     cfg = {}
     p = os.path.join(d, 'config.yml')
     if os.path.isfile(p):
-        cfg = yaml.load(p)
+        with open(p,'r') as rfile:
+            cfg = yaml.load(rfile)
 
-    cfg = Config(cfg)
+    cfg = Config(**cfg)
     return cfg
 
 
@@ -63,14 +64,17 @@ def post_event(dev, cfg, ctx):
         requests.post(cfg.labspy_api_url, ctx)
 
     if cfg.led_enabled:
-        msg = ''.join(['{}:{:0.2f}'.format(k, v) for k, v in ctx.iteritems()])
+        msg = 'Hum: {humidity:0.2f} Th: {tempH:0.2f} Tp: {tempP:0.2f} Atm: {atm_pressure:0.2f}'.format(**ctx)
         dev.show_message(msg, cfg.led_scroll_speed)
 
+    if cfg.console_enabled:
+        msg = ' '.join(['{}:{:0.2f}'.format(k, v) for k, v in ctx.iteritems()])
+        print '{} {}'.format(time.time(), msg)
 
 def assemble_ctx(dev):
     h = dev.get_humidity()
     th = dev.get_temperature_from_humidity()
-    tp = dev.get_temperature_from_pressue()
+    tp = dev.get_temperature_from_pressure()
     p = dev.get_pressure()
     return {'humidity': h, 'tempH': th, 'tempP': tp, 'atm_pressure': p}
 
