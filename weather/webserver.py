@@ -49,5 +49,6 @@ def serve_forever():
 
     t = Process(target=app.run, kwargs=options)
     t.start()
+    t.setDaemon(True)
 
 # ============= EOF =============================================
