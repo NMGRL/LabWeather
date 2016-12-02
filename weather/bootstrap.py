@@ -22,7 +22,7 @@ import time
 from requests.auth import HTTPBasicAuth
 from datetime import datetime
 from config import get_configuration
-from weather import webcontext
+import webcontext
 
 try:
     from sense_hat import SenseHat

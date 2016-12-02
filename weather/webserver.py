@@ -20,11 +20,11 @@
 from datetime import datetime
 from flask import Flask, render_template
 
-from weather import webcontext
-from weather.config import get_configuration
+import webcontext
+from config import get_configuration
 
-from weather import use_multiprocess
-if use_multiprocess:
+
+if webcontext.use_multiprocess:
     from multiprocessing import Process
 else:
     from threading import Thread as Process
@@ -43,10 +43,9 @@ def index():
 
 
 def serve_forever():
-
     options = cfg.get('options', {})
-    options['port']=cfg.get('port', 5000)
-    t = Process(target = app.run, kwargs=options)
+    options['port'] = cfg.get('port', 5000)
+    t = Process(target=app.run, kwargs=options)
     t.start()
 
 # ============= EOF =============================================

@@ -17,7 +17,7 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-from weather import use_multiprocess
+use_multiprocess = False
 if use_multiprocess:
     from multiprocessing import Queue
 else:
