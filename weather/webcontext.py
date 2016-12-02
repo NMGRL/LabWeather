@@ -17,6 +17,23 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-context = {}
+from weather import use_multiprocess
+if use_multiprocess:
+    from multiprocessing import Queue
+else:
+    from Queue import Queue
+
+queue = Queue()
+
+
+def update_context(ctx):
+    while not queue.empty():
+        queue.get()
+
+    queue.put(ctx)
+
+
+def get_context():
+    return queue.get()
 
 # ============= EOF =============================================

@@ -26,12 +26,16 @@ class Config:
     period = 1
     labspy_enabled = False
     labspy_api_url = ''
+    labspy_period = 1
 
     led_enabled = True
     led_scroll_speed = 0.1
+    led_period = 10
 
     console_enabled = True
+    console_period = 1
     webserver_enabled = True
+    webserver_period = 1
 
     def __init__(self, **kw):
         for k, v in kw.iteritems():

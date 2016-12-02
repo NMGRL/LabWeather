@@ -25,4 +25,6 @@ __author__ = 'Jake Ross '
 __author_email__ = 'jake.ross@nmt.edu'
 __maintainer__ = ''
 __maintainer_email__ = ''
+
+use_multiprocess = False
 # ============= EOF =============================================

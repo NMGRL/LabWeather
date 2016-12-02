@@ -18,13 +18,10 @@
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
 import requests
-import os
 import time
-import yaml
-from threading import Lock, Thread
 from requests.auth import HTTPBasicAuth
 from datetime import datetime
-from config import Config, get_configuration
+from config import get_configuration
 from weather import webcontext
 
 try:
@@ -39,8 +36,6 @@ DEBUG = 2
 
 LEVEL = DEBUG
 
-web_lock = Lock()
-
 
 def bootstrap():
     dev = SenseHat()
@@ -51,14 +46,18 @@ def bootstrap():
 
 def start_service(dev, cfg):
     if cfg.webserver_enabled:
-        from webserver import app
-        t = Thread(target=app.run)
-        t.start()
+        from webserver import serve_forever
+        serve_forever()
 
     period = cfg.period
     while 1:
         ctx = assemble_ctx(dev)
-        post_event(dev, cfg, ctx)
+
+        console_event(cfg, ctx)
+        web_event(cfg, ctx)
+        labspy_event(cfg, ctx)
+        led_event(dev, cfg, ctx)
+
         time.sleep(period)
 
 
@@ -76,16 +75,35 @@ def debug(msg):
         log(msg, 'DEBUG')
 
 
-def post_event(dev, cfg, ctx):
-    if cfg.console_enabled:
+last_event = {'console': 0,
+              'labspy': 0,
+              'led': 0,
+              'webserver': 0}
+
+
+def post_enabled(cfg, tag):
+    ct = time.time()
+    if getattr(cfg, '{}_enabled'.format(tag)):
+        ret = ct - last_event[tag] > getattr(cfg, '{}_period'.format(tag))
+        if ret:
+            last_event[tag] = ct
+            debug('post event {}'.format(tag))
+        return ret
+
+
+def console_event(cfg, ctx):
+    if post_enabled(cfg, 'console'):
         msg = ' '.join(['{}:{:0.2f}'.format(k, v) for k, v in ctx.iteritems()])
         info('{} {}'.format(time.time(), msg))
 
-    if cfg.webserver_enabled:
-        with web_lock:
-            webcontext.context = ctx
 
-    if cfg.labspy_enabled:
+def web_event(cfg, ctx):
+    if post_enabled(cfg, 'webserver'):
+        webcontext.update_context(ctx)
+
+
+def labspy_event(cfg, ctx):
+    if post_enabled(cfg, 'labspy'):
         auth = HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
 
         for k, v in ctx.iteritems():
@@ -112,7 +130,9 @@ def post_event(dev, cfg, ctx):
                 elif resp.status_code in (500, 400):
                     break
 
-    if cfg.led_enabled:
+
+def led_event(dev, cfg, ctx):
+    if post_enabled(cfg, 'led'):
         msg = 'Hum: {humidity:0.2f} Th: {tempH:0.2f} Tp: {tempP:0.2f} Atm: {atm_pressure:0.2f}'.format(**ctx)
         dev.show_message(msg, cfg.led_scroll_speed)
 

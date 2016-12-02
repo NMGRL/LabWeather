@@ -23,17 +23,30 @@ from flask import Flask, render_template
 from weather import webcontext
 from weather.config import get_configuration
 
-cfg = get_configuration('server.yaml')
+from weather import use_multiprocess
+if use_multiprocess:
+    from multiprocessing import Process
+else:
+    from threading import Thread as Process
 
-appname = cfg.get('appname', 'RPiWeather')
+cfg = get_configuration('server.yaml')
 
 app = Flask(__name__)
 
 
 @app.route('/')
 def index():
+    ctx = webcontext.get_context()
     return render_template('index.html',
                            timestamp=datetime.now().isoformat(),
-                           ctx=webcontext.context)
+                           ctx=ctx)
+
+
+def serve_forever():
+
+    options = cfg.get('options', {})
+    options['port']=cfg.get('port', 5000)
+    t = Process(target = app.run, kwargs=options)
+    t.start()
 
 # ============= EOF =============================================
