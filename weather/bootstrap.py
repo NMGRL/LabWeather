@@ -59,10 +59,41 @@ def start_service(dev, cfg):
         time.sleep(period)
 
 
+PREV={}
 def post_event(dev, cfg, ctx):
     if cfg.labspy_enabled:
-        requests.post(cfg.labspy_api_url, ctx)
-
+        print 'posting'
+        #requests.post(cfg.labspy_api_url, ctx)
+        from requests.auth import HTTPBasicAuth
+        auth=HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
+        
+   	for k,v in ctx.iteritems():
+            process_id = cfg.get('labspy_{}_id'.format(k))
+            if process_id is None:
+                print 'process_id not available for {}'.format(k)
+                continue
+            prev = PREV.get(k)
+            if prev is not None and abs(prev-v)<0.5:
+                 print 'Not posting. current ={} previous={}'.format(v, prev)
+                 continue
+            PREV[k]=v
+            url = '{}/measurements/'.format(cfg.labspy_api_url)
+            #process_id = '{}/processinfos/{}'.format(cfg.labspy_api_url, process_id)
+            payload = {'value':v, 'process_info': process_id}
+        
+            resp = requests.post(url, json=payload, auth=auth)
+            if resp.status_code!=201:
+                print 'url={}'.format(url)
+                print 'payload={}'.format(payload)
+                print 'response {} device_id={} k={} v={}'.format(resp, process_id, k, v)
+                if resp.status_code==403:
+                    print 'username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password)
+		elif resp.status_code in (500, 400):
+                    for line in resp.iter_lines():
+                        print line
+                        raw_input()
+                    import sys; sys.exit()
+                    break
     if cfg.led_enabled:
         msg = 'Hum: {humidity:0.2f} Th: {tempH:0.2f} Tp: {tempP:0.2f} Atm: {atm_pressure:0.2f}'.format(**ctx)
         dev.show_message(msg, cfg.led_scroll_speed)

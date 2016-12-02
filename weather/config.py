@@ -33,5 +33,7 @@ class Config:
     def __init__(self, **kw):
         for k, v in kw.iteritems():
             setattr(self, k, v)
-
+    def get(self, k):
+        if hasattr(self, k):
+            return getattr(self, k)
 # ============= EOF =============================================
