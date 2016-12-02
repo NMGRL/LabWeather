@@ -45,6 +45,8 @@ def index():
 def serve_forever():
     options = cfg.get('options', {})
     options['port'] = cfg.get('port', 5000)
+    options['host'] = cfg.get('host', 'localhost')
+
     t = Process(target=app.run, kwargs=options)
     t.start()
 
