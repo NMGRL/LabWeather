@@ -17,45 +17,6 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-import os
-
-import yaml
-
-
-class Config:
-    period = 1
-    labspy_enabled = False
-    labspy_api_url = ''
-
-    led_enabled = True
-    led_scroll_speed = 0.1
-
-    console_enabled = True
-    webserver_enabled = True
-
-    def __init__(self, **kw):
-        for k, v in kw.iteritems():
-            setattr(self, k, v)
-
-    def get(self, k, default=None):
-        ret = default
-        if hasattr(self, k):
-            ret = getattr(self, k)
-        return ret
-
-
-def get_configuration(name='config.yml'):
-    d = os.path.join(os.path.expanduser('~'), '.weather')
-    if not os.path.isdir(d):
-        os.mkdir(d)
-
-    cfg = {}
-    p = os.path.join(d, name)
-    if os.path.isfile(p):
-        with open(p, 'r') as rfile:
-            cfg = yaml.load(rfile)
-
-    cfg = Config(**cfg)
-    return cfg
+context = {}
 
 # ============= EOF =============================================

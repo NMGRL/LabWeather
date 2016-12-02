@@ -17,41 +17,44 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-import os
-
-import time
-
 import requests
+import os
+import time
 import yaml
+from threading import Lock, Thread
+from requests.auth import HTTPBasicAuth
+from datetime import datetime
+from config import Config, get_configuration
+from weather import webcontext
 
-from config import Config
+try:
+    from sense_hat import SenseHat
+except ImportError:
+    from mock_sense_hat import MockSenseHat as SenseHat
+
+PREV = {}
+
+INFO = 1
+DEBUG = 2
+
+LEVEL = DEBUG
+
+web_lock = Lock()
 
 
 def bootstrap():
-    from sense_hat import SenseHat
-
     dev = SenseHat()
 
     cfg = get_configuration()
     start_service(dev, cfg)
 
 
-def get_configuration():
-    d = os.path.join(os.path.expanduser('~'), '.weather')
-    if not os.path.isdir(d):
-        os.mkdir(d)
-
-    cfg = {}
-    p = os.path.join(d, 'config.yml')
-    if os.path.isfile(p):
-        with open(p,'r') as rfile:
-            cfg = yaml.load(rfile)
-
-    cfg = Config(**cfg)
-    return cfg
-
-
 def start_service(dev, cfg):
+    if cfg.webserver_enabled:
+        from webserver import app
+        t = Thread(target=app.run)
+        t.start()
+
     period = cfg.period
     while 1:
         ctx = assemble_ctx(dev)
@@ -59,48 +62,60 @@ def start_service(dev, cfg):
         time.sleep(period)
 
 
-PREV={}
+def log(msg, tag):
+    print '{} - {} - {}'.format(datetime.now().isoformat(), tag, msg)
+
+
+def info(msg):
+    if LEVEL >= INFO:
+        log(msg, 'INFO')
+
+
+def debug(msg):
+    if LEVEL >= DEBUG:
+        log(msg, 'DEBUG')
+
+
 def post_event(dev, cfg, ctx):
+    if cfg.console_enabled:
+        msg = ' '.join(['{}:{:0.2f}'.format(k, v) for k, v in ctx.iteritems()])
+        info('{} {}'.format(time.time(), msg))
+
+    if cfg.webserver_enabled:
+        with web_lock:
+            webcontext.context = ctx
+
     if cfg.labspy_enabled:
-        print 'posting'
-        #requests.post(cfg.labspy_api_url, ctx)
-        from requests.auth import HTTPBasicAuth
-        auth=HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
-        
-   	for k,v in ctx.iteritems():
+        auth = HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
+
+        for k, v in ctx.iteritems():
             process_id = cfg.get('labspy_{}_id'.format(k))
             if process_id is None:
-                print 'process_id not available for {}'.format(k)
+                debug('process_id not available for {}'.format(k))
                 continue
             prev = PREV.get(k)
-            if prev is not None and abs(prev-v)<0.5:
-                 print 'Not posting. current ={} previous={}'.format(v, prev)
-                 continue
-            PREV[k]=v
+            if prev is not None and abs(prev - v) < 0.5:
+                debug('Not posting. current ={} previous={}'.format(v, prev))
+                continue
+
+            PREV[k] = v
             url = '{}/measurements/'.format(cfg.labspy_api_url)
-            #process_id = '{}/processinfos/{}'.format(cfg.labspy_api_url, process_id)
-            payload = {'value':v, 'process_info': process_id}
-        
+            payload = {'value': v, 'process_info': process_id}
+
             resp = requests.post(url, json=payload, auth=auth)
-            if resp.status_code!=201:
-                print 'url={}'.format(url)
-                print 'payload={}'.format(payload)
-                print 'response {} device_id={} k={} v={}'.format(resp, process_id, k, v)
-                if resp.status_code==403:
-                    print 'username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password)
-		elif resp.status_code in (500, 400):
-                    for line in resp.iter_lines():
-                        print line
-                        raw_input()
-                    import sys; sys.exit()
+            if resp.status_code != 201:
+                debug('url={}'.format(url))
+                debug('payload={}'.format(payload))
+                debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
+                if resp.status_code == 403:
+                    debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
+                elif resp.status_code in (500, 400):
                     break
+
     if cfg.led_enabled:
         msg = 'Hum: {humidity:0.2f} Th: {tempH:0.2f} Tp: {tempP:0.2f} Atm: {atm_pressure:0.2f}'.format(**ctx)
         dev.show_message(msg, cfg.led_scroll_speed)
 
-    if cfg.console_enabled:
-        msg = ' '.join(['{}:{:0.2f}'.format(k, v) for k, v in ctx.iteritems()])
-        print '{} {}'.format(time.time(), msg)
 
 def assemble_ctx(dev):
     h = dev.get_humidity()

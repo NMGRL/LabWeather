@@ -17,45 +17,23 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-import os
+from datetime import datetime
+from flask import Flask, render_template
 
-import yaml
+from weather import webcontext
+from weather.config import get_configuration
 
+cfg = get_configuration('server.yaml')
 
-class Config:
-    period = 1
-    labspy_enabled = False
-    labspy_api_url = ''
+appname = cfg.get('appname', 'RPiWeather')
 
-    led_enabled = True
-    led_scroll_speed = 0.1
-
-    console_enabled = True
-    webserver_enabled = True
-
-    def __init__(self, **kw):
-        for k, v in kw.iteritems():
-            setattr(self, k, v)
-
-    def get(self, k, default=None):
-        ret = default
-        if hasattr(self, k):
-            ret = getattr(self, k)
-        return ret
+app = Flask(__name__)
 
 
-def get_configuration(name='config.yml'):
-    d = os.path.join(os.path.expanduser('~'), '.weather')
-    if not os.path.isdir(d):
-        os.mkdir(d)
-
-    cfg = {}
-    p = os.path.join(d, name)
-    if os.path.isfile(p):
-        with open(p, 'r') as rfile:
-            cfg = yaml.load(rfile)
-
-    cfg = Config(**cfg)
-    return cfg
+@app.route('/')
+def index():
+    return render_template('index.html',
+                           timestamp=datetime.now().isoformat(),
+                           ctx=webcontext.context)
 
 # ============= EOF =============================================

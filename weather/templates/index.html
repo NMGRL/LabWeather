@@ -1,0 +1,30 @@
+{% block body %}
+<p>Timestamp: {{timestamp}}</p>
+<table border="1">
+    <th>
+        <td>Value</td>
+        <td>Units</td>
+    </th>
+    <tr>
+        <td>Temperature1</td>
+        <td>{{'%0.2f' | format(ctx.tempH|float)}}</td>
+        <td>C</td>
+    </tr>
+    <tr>
+        <td>Temperature2</td>
+        <td>{{'%0.2f'| format(ctx.tempP|float)}}</td>
+        <td>C</td>
+    </tr>
+    <tr>
+        <td>Humidity</td>
+        <td>{{'%0.2f'| format(ctx.humidity|float)}}</td>
+        <td>%</td>
+    </tr>
+    <tr>
+        <td>Pressure</td>
+        <td>{{'%0.2f'| format(ctx.atm_pressure|float)}}</td>
+        <td>mbars</td>
+    </tr>
+</table>
+
+{% endblock %}

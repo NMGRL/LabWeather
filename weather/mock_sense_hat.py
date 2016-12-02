@@ -17,45 +17,23 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-import os
-
-import yaml
+import random
 
 
-class Config:
-    period = 1
-    labspy_enabled = False
-    labspy_api_url = ''
+class MockSenseHat:
+    def show_message(self, *args, **kw):
+        pass
 
-    led_enabled = True
-    led_scroll_speed = 0.1
+    def get_humidity(self, *args, **kw):
+        return random.random()
 
-    console_enabled = True
-    webserver_enabled = True
+    def get_temperature_from_humidity(self, *args, **kw):
+        return random.random() + 10
 
-    def __init__(self, **kw):
-        for k, v in kw.iteritems():
-            setattr(self, k, v)
+    def get_temperature_from_pressure(self, *args, **kw):
+        return random.random() + 20
 
-    def get(self, k, default=None):
-        ret = default
-        if hasattr(self, k):
-            ret = getattr(self, k)
-        return ret
-
-
-def get_configuration(name='config.yml'):
-    d = os.path.join(os.path.expanduser('~'), '.weather')
-    if not os.path.isdir(d):
-        os.mkdir(d)
-
-    cfg = {}
-    p = os.path.join(d, name)
-    if os.path.isfile(p):
-        with open(p, 'r') as rfile:
-            cfg = yaml.load(rfile)
-
-    cfg = Config(**cfg)
-    return cfg
+    def get_pressure(self, *args, **kw):
+        return random.random() + 30
 
 # ============= EOF =============================================
