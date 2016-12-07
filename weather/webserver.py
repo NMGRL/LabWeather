@@ -29,7 +29,7 @@ if webcontext.use_multiprocess:
 else:
     from threading import Thread as Process
 
-cfg = get_configuration('server.yaml')
+cfg = get_configuration('server.yml')
 
 app = Flask(__name__)
 
@@ -48,7 +48,7 @@ def serve_forever():
     options['host'] = cfg.get('host', 'localhost')
 
     t = Process(target=app.run, kwargs=options)
-    t.start()
     t.setDaemon(True)
+    t.start()
 
 # ============= EOF =============================================

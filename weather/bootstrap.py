@@ -23,6 +23,7 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 from config import get_configuration
 import webcontext
+from weather.ds18b20 import DS18B20, list_device_names
 
 try:
     from sense_hat import SenseHat
@@ -38,27 +39,39 @@ LEVEL = DEBUG
 
 
 def bootstrap():
-    dev = SenseHat()
-
     cfg = get_configuration()
-    start_service(dev, cfg)
+    start_service(cfg)
 
 
-def start_service(dev, cfg):
+def start_service(cfg):
     if cfg.webserver_enabled:
         from webserver import serve_forever
         serve_forever()
 
+    devices = load_devices(cfg)
     period = cfg.period
     while 1:
-        ctx = assemble_ctx(dev)
-
+        ctx = assemble_ctx(devices)
         console_event(cfg, ctx)
         web_event(cfg, ctx)
         labspy_event(cfg, ctx)
-        led_event(dev, cfg, ctx)
+        led_event(devices['sensehat'], cfg, ctx)
 
         time.sleep(period)
+
+
+def load_devices(cfg):
+    devices = {'sensehat': SenseHat()}
+    use_probes = cfg.get('use_temp_probes')
+    if use_probes:
+        nprobes = {}
+        for name in list_device_names():
+            dd = DS18B20(name)
+            if dd.connect():
+                nprobes[name] = dd
+        devices['tprobes'] = nprobes
+
+    return devices
 
 
 def log(msg, tag):
@@ -93,7 +106,7 @@ def post_enabled(cfg, tag):
 
 def console_event(cfg, ctx):
     if post_enabled(cfg, 'console'):
-        msg = ' '.join(['{}:{:0.2f}'.format(k, v) for k, v in ctx.iteritems()])
+        msg = ' '.join(['{}-{}:{:0.2f}'.format(d, k, v) for d, dev in ctx.iteritems() for k, v in dev.iteritems()])
         info('{} {}'.format(time.time(), msg))
 
 
@@ -106,43 +119,52 @@ def labspy_event(cfg, ctx):
     if post_enabled(cfg, 'labspy'):
         auth = HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
 
-        for k, v in ctx.iteritems():
-            process_id = cfg.get('labspy_{}_id'.format(k))
-            if process_id is None:
-                debug('process_id not available for {}'.format(k))
-                continue
-            prev = PREV.get(k)
-            if prev is not None and abs(prev - v) < 0.5:
-                debug('Not posting. current ={} previous={}'.format(v, prev))
-                continue
+        for dev, dctx in ctx.iteritems():
+            debug('device={}'.format(dev))
+            for k, v in dctx.iteritems():
+                process_id = cfg.get('labspy_{}_{}_id'.format(dev, k))
+                if process_id is None:
+                    debug('process_id not available for {}'.format(k))
+                    continue
+                prev = PREV.get(k)
+                if prev is not None and abs(prev - v) < 0.5:
+                    debug('Not posting. current ={} previous={}'.format(v, prev))
+                    continue
 
-            PREV[k] = v
-            url = '{}/measurements/'.format(cfg.labspy_api_url)
-            payload = {'value': v, 'process_info': process_id}
+                PREV[k] = v
+                url = '{}/measurements/'.format(cfg.labspy_api_url)
+                payload = {'value': v, 'process_info': process_id}
 
-            resp = requests.post(url, json=payload, auth=auth)
-            if resp.status_code != 201:
-                debug('url={}'.format(url))
-                debug('payload={}'.format(payload))
-                debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
-                if resp.status_code == 403:
-                    debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
-                elif resp.status_code in (500, 400):
-                    break
+                resp = requests.post(url, json=payload, auth=auth)
+                if resp.status_code != 201:
+                    debug('url={}'.format(url))
+                    debug('payload={}'.format(payload))
+                    debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
+                    if resp.status_code == 403:
+                        debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
+                    elif resp.status_code in (500, 400):
+                        break
 
 
 def led_event(dev, cfg, ctx):
     if post_enabled(cfg, 'led'):
+        ctx = ctx['sensehat']
         msg = 'Hum: {humidity:0.2f} Th: {tempH:0.2f} Tp: {tempP:0.2f} Atm: {atm_pressure:0.2f}'.format(**ctx)
         dev.show_message(msg, cfg.led_scroll_speed)
 
 
-def assemble_ctx(dev):
-    h = dev.get_humidity()
-    th = dev.get_temperature_from_humidity()
-    tp = dev.get_temperature_from_pressure()
-    p = dev.get_pressure()
-    return {'humidity': h, 'tempH': th, 'tempP': tp, 'atm_pressure': p}
+def assemble_ctx(devs):
+    shat = devs['sensehat']
+    h = shat.get_humidity()
+    th = shat.get_temperature_from_humidity()
+    tp = shat.get_temperature_from_pressure()
+    p = shat.get_pressure()
+
+    ctx = {'sensehat': {'humidity': h, 'tempH': th, 'tempP': tp, 'atm_pressure': p}}
+    for k, dev in devs['tprobes'].iteritems():
+        ctx[k] = {'temp': dev.get_temperature()}
+
+    return ctx
 
 
 if __name__ == '__main__':

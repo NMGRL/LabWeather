@@ -37,6 +37,8 @@ class Config:
     webserver_enabled = True
     webserver_period = 1
 
+    use_temp_probes = False
+
     def __init__(self, **kw):
         for k, v in kw.iteritems():
             setattr(self, k, v)
@@ -49,6 +51,7 @@ class Config:
 
 
 def get_configuration(name='config.yml'):
+    """"""
     d = os.path.join(os.path.expanduser('~'), '.weather')
     if not os.path.isdir(d):
         os.mkdir(d)
