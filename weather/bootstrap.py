@@ -113,7 +113,7 @@ def console_event(cfg, ctx):
             msg = '{}: {:0.2f}'.format(k, v)
             info('{} {}'.format(t, msg))
 
-        for p in ctx['probes']:
+        for p in ctx['tprobes']:
             msg = '{}: {:0.2f}'.format(p['name'], p['temp'])
             info('{} {}'.format(t, msg))
 
