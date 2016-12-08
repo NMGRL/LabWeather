@@ -164,8 +164,7 @@ def assemble_ctx(devs):
 
     ctx = {'sensehat': {'humidity': h, 'tempH': th, 'tempP': tp, 'atm_pressure': p}}
     for k, dev in devs['tprobes'].iteritems():
-        ctx[k] = {'temp': dev.get_temperature(),
-                  'name': dev.name}
+        ctx[k] = {'temp': dev.get_temperature()}
 
     return ctx
 
