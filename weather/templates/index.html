@@ -31,8 +31,8 @@
         <tr>
             <td>{{ t.display_name }}</td>
             <td>{{'%0.2f' | format(t.temp|float)}}</td>
-            <td>{{ t.name }}</td>
             <td>C</td>
+            <td>{{ t.name }}</td>
         </tr>
     {% endfor %}
 </table>

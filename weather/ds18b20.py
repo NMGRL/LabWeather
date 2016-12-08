@@ -46,7 +46,7 @@ def list_device_names():
 def get_display_name(name):
     with open(paths.tprobe_mapping_path, 'r') as rfile:
         m = yaml.load(rfile)
-        return next((k for k, v in m.itervalues() if v == name), name)
+        return next((k for k, v in m.iteritems() if v == name), name)
 
 
 class DS18B20:

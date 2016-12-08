@@ -22,7 +22,7 @@ import os
 
 class Paths:
     def __init__(self):
-        root = os.path.join(os.path.expanduser('~'), '.weather')
+        root = '/home/pi/.weather'
         if not os.path.isdir(root):
             os.mkdir(root)
 
