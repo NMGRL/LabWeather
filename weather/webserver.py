@@ -43,10 +43,12 @@ def index():
 
 
 def serve_forever():
+    #print cfg, dir(cfg)
     options = cfg.get('options', {})
-    options['port'] = cfg.get('port', 5000)
-    options['host'] = cfg.get('host', 'localhost')
-
+    #print options, cfg.options
+    #options['port'] =.get('port', 5000)
+    #options['host'] = cfg.get('host', 'localhost')
+    #print options
     t = Process(target=app.run, kwargs=options)
     t.setDaemon(True)
     t.start()

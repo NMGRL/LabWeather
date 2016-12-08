@@ -34,7 +34,7 @@ def list_devices():
 
 def list_device_names():
     devs = list_devices()
-    return [os.basename(di) for di in devs]
+    return [os.path.basename(di) for di in devs]
 
 
 class DS18B20:
@@ -45,7 +45,7 @@ class DS18B20:
         self._name = name
 
     def connect(self):
-        if os.path.isfile(self._path):
+        if os.path.exists(self._path):
             return True
         else:
             self.simulation = True
@@ -61,9 +61,9 @@ class DS18B20:
             lines = self._read_raw()
             st = time.time()
             while 1:
-                if time.time() - st < timeout:
+                if time.time() - st > timeout:
                     print '{} GetTemp timed out timeout={}'.format(self._name, timeout)
-                    return
+                    return 0
 
                 if lines[0][-3:] != 'YES':
                     time.sleep(0.2)
@@ -79,7 +79,7 @@ class DS18B20:
             return temp_c
 
     def _read_raw(self):
-        with open(self._path, 'r') as rfile:
+        with open(os.path.join(self._path,'w1_slave'), 'r') as rfile:
             return [l.strip() for l in rfile.readlines()]
 
 # ============= EOF =============================================

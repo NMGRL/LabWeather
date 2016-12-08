@@ -58,10 +58,12 @@ def get_configuration(name='config.yml'):
 
     cfg = {}
     p = os.path.join(d, name)
+    print 'getting configuration from {}'.format(p)
     if os.path.isfile(p):
         with open(p, 'r') as rfile:
             cfg = yaml.load(rfile)
-
+    else:
+        print 'Invalid config file {}'.format(p)
     cfg = Config(**cfg)
     return cfg
 

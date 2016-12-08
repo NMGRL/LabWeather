@@ -23,7 +23,7 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 from config import get_configuration
 import webcontext
-from weather.ds18b20 import DS18B20, list_device_names
+from ds18b20 import DS18B20, list_device_names
 
 try:
     from sense_hat import SenseHat
@@ -106,8 +106,10 @@ def post_enabled(cfg, tag):
 
 def console_event(cfg, ctx):
     if post_enabled(cfg, 'console'):
-        msg = ' '.join(['{}-{}:{:0.2f}'.format(d, k, v) for d, dev in ctx.iteritems() for k, v in dev.iteritems()])
-        info('{} {}'.format(time.time(), msg))
+        t = time.time()
+        for mi in ['{}-{}:{:0.2f}'.format(d, k, v) for d, dev in ctx.iteritems() for k, v in dev.iteritems()]:
+            info('{} {}'.format(t, mi))
+#        info('{} {}'.format(time.time(), msg))
 
 
 def web_event(cfg, ctx):
