@@ -42,7 +42,7 @@ class DS18B20:
 
     def __init__(self, name):
         self._path = os.path.join(root, name)
-        self._name = name
+        self.name = name
 
     def connect(self):
         if os.path.exists(self._path):
@@ -62,7 +62,7 @@ class DS18B20:
             st = time.time()
             while 1:
                 if time.time() - st > timeout:
-                    print '{} GetTemp timed out timeout={}'.format(self._name, timeout)
+                    print '{} GetTemp timed out timeout={}'.format(self.name, timeout)
                     return 0
 
                 if lines[0][-3:] != 'YES':
