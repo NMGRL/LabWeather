@@ -4,6 +4,7 @@
     <th>
         <td>Value</td>
         <td>Units</td>
+        <td>Serial</td>
     </th>
     <tr>
         <td>Temperature1</td>
@@ -28,8 +29,9 @@
 
     {% for t in ctx.tprobes %}
         <tr>
-            <td>{{ t.name }}</td>
+            <td>{{ t.display_name }}</td>
             <td>{{'%0.2f' | format(t.temp|float)}}</td>
+            <td>{{ t.name }}</td>
             <td>C</td>
         </tr>
     {% endfor %}

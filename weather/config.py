@@ -21,6 +21,8 @@ import os
 
 import yaml
 
+from paths import paths
+
 
 class Config:
     period = 1
@@ -52,12 +54,13 @@ class Config:
 
 def get_configuration(name='config.yml'):
     """"""
-    d = os.path.join(os.path.expanduser('~'), '.weather')
-    if not os.path.isdir(d):
-        os.mkdir(d)
+    # d = os.path.join(os.path.expanduser('~'), '.weather')
+
+    if not os.path.isdir(paths.root):
+        os.mkdir(paths.root)
 
     cfg = {}
-    p = os.path.join(d, name)
+    p = os.path.join(paths.root, name)
     print 'getting configuration from {}'.format(p)
     if os.path.isfile(p):
         with open(p, 'r') as rfile:

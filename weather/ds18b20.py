@@ -22,10 +22,16 @@ import os
 
 import time
 
+import yaml
+
+from paths import paths
+
 root = '/sys/bus/w1/devices'
 
-os.system('modprobe w1-gpio')
-os.system('modprobe w1-therm')
+sysname, nodename, release, version, machine = os.uname()
+if sysname == 'Linux' and nodename == 'raspberrypi':
+    os.system('modprobe w1-gpio')
+    os.system('modprobe w1-therm')
 
 
 def list_devices():
@@ -37,12 +43,20 @@ def list_device_names():
     return [os.path.basename(di) for di in devs]
 
 
+def get_display_name(name):
+    with open(paths.tprobe_mapping_path, 'r') as rfile:
+        m = yaml.load(rfile)
+        return next((k for k, v in m.itervalues() if v == name), name)
+
+
 class DS18B20:
     simulation = False
 
     def __init__(self, name):
         self._path = os.path.join(root, name)
         self.name = name
+
+        self.display_name = get_display_name(name)
 
     def connect(self):
         if os.path.exists(self._path):
@@ -79,7 +93,7 @@ class DS18B20:
             return temp_c
 
     def _read_raw(self):
-        with open(os.path.join(self._path,'w1_slave'), 'r') as rfile:
+        with open(os.path.join(self._path, 'w1_slave'), 'r') as rfile:
             return [l.strip() for l in rfile.readlines()]
 
 # ============= EOF =============================================

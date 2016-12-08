@@ -17,35 +17,19 @@
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
 # ============= local library imports  ==========================
-from datetime import datetime
-from flask import Flask, render_template
-
-import webcontext
-from config import get_configuration
+import os
 
 
-if webcontext.use_multiprocess:
-    from multiprocessing import Process
-else:
-    from threading import Thread as Process
+class Paths:
+    def __init__(self):
+        root = os.path.join(os.path.expanduser('~'), '.weather')
+        if not os.path.isdir(root):
+            os.mkdir(root)
+
+        self.root = root
+        self.tprobe_mapping_path = os.path.join(root, 'tprobe_mapping.yml')
 
 
-app = Flask(__name__)
-
-
-@app.route('/')
-def index():
-    ctx = webcontext.get_context()
-    return render_template('index.html',
-                           timestamp=datetime.now().isoformat(),
-                           ctx=ctx)
-
-
-def serve_forever():
-    cfg = get_configuration('server.yml')
-    options = cfg.get('options', {})
-    t = Process(target=app.run, kwargs=options)
-    t.setDaemon(True)
-    t.start()
+paths = Paths()
 
 # ============= EOF =============================================
