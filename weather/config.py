@@ -29,6 +29,7 @@ class Config:
     labspy_enabled = False
     labspy_api_url = ''
     labspy_period = 1
+    labspy_change_threshold = 0.5
 
     led_enabled = True
     led_scroll_speed = 0.1

@@ -62,14 +62,13 @@ def start_service(cfg):
 
 def load_devices(cfg):
     devices = {'sensehat': SenseHat()}
-    use_probes = cfg.get('use_temp_probes')
-    if use_probes:
-        nprobes = {}
+    nprobes = {}
+    if cfg.get('use_temp_probes'):
         for name in list_device_names():
             dd = DS18B20(name)
             if dd.connect():
                 nprobes[name] = dd
-        devices['tprobes'] = nprobes
+    devices['tprobes'] = nprobes
 
     return devices
 
@@ -114,7 +113,7 @@ def console_event(cfg, ctx):
             info('{} {}'.format(t, msg))
 
         for p in ctx['tprobes']:
-            msg = '{}: {:0.2f}'.format(p['name'], p['temp'])
+            msg = '{display_name:}({name:}): {temp:0.2f}'.format(**p)
             info('{} {}'.format(t, msg))
 
 
@@ -128,32 +127,47 @@ def labspy_event(cfg, ctx):
         auth = HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
 
         dev = 'sensehat'
-        dctx = ctx['sensehat']
-
-        debug('device={}'.format(dev))
-        for k, v in dctx.iteritems():
-            process_id = cfg.get('labspy_{}_{}_id'.format(dev, k))
-            if process_id is None:
-                debug('process_id not available for {}'.format(k))
+        debug('labspy post for {}'.format(dev))
+        for k, v in ctx[dev].iteritems():
+            ret = labspy_measuremnet(cfg, dev, k, v, auth)
+            if ret == 'continue':
                 continue
-            prev = PREV.get(k)
-            if prev is not None and abs(prev - v) < 0.5:
-                debug('Not posting. current ={} previous={}'.format(v, prev))
+            elif ret == 'break':
+                break
+
+        dev = 'tprobes'
+        debug('labspy post for {}'.format(dev))
+        for pd in ctx[dev].itervalues():
+            ret = labspy_measuremnet(cfg, 'tprobe', pd['name'], pd['temp'], auth)
+            if ret == 'continue':
                 continue
+            elif ret == 'break':
+                break
 
-            PREV[k] = v
-            url = '{}/measurements/'.format(cfg.labspy_api_url)
-            payload = {'value': v, 'process_info': process_id}
 
-            resp = requests.post(url, json=payload, auth=auth)
-            if resp.status_code != 201:
-                debug('url={}'.format(url))
-                debug('payload={}'.format(payload))
-                debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
-                if resp.status_code == 403:
-                    debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
-                elif resp.status_code in (500, 400):
-                    break
+def labspy_measuremnet(cfg, dev, k, v, auth):
+    process_id = cfg.get('labspy_{}_{}_id'.format(dev, k))
+    if process_id is None:
+        debug('process_id not available for {}'.format(k))
+        return 'continue'
+    prev = PREV.get(process_id)
+    if prev is not None and abs(prev - v) < cfg.labspy_change_threshold:
+        debug('Not posting. current ={} previous={}'.format(v, prev))
+        return 'continue'
+
+    PREV[process_id] = v
+    url = '{}/measurements/'.format(cfg.labspy_api_url)
+    payload = {'value': v, 'process_info': process_id}
+
+    resp = requests.post(url, json=payload, auth=auth)
+    if resp.status_code != 201:
+        debug('url={}'.format(url))
+        debug('payload={}'.format(payload))
+        debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
+        if resp.status_code == 403:
+            debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
+        elif resp.status_code in (500, 400):
+            return 'break'
 
 
 def led_event(dev, cfg, ctx):
