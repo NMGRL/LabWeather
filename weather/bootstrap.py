@@ -107,9 +107,15 @@ def post_enabled(cfg, tag):
 def console_event(cfg, ctx):
     if post_enabled(cfg, 'console'):
         t = time.time()
-        for mi in ['{}-{}:{:0.2f}'.format(d, k, v) for d, dev in ctx.iteritems() for k, v in dev.iteritems()]:
-            info('{} {}'.format(t, mi))
-#        info('{} {}'.format(time.time(), msg))
+
+        sense = ctx['sensehat']
+        for k, v in sense.iteritems():
+            msg = '{}: {:0.2f}'.format(k, v)
+            info('{} {}'.format(t, msg))
+
+        for p in ctx['probes']:
+            msg = '{}: {:0.2f}'.format(p['name'], p['temp'])
+            info('{} {}'.format(t, msg))
 
 
 def web_event(cfg, ctx):
@@ -121,31 +127,33 @@ def labspy_event(cfg, ctx):
     if post_enabled(cfg, 'labspy'):
         auth = HTTPBasicAuth(cfg.labspy_username, cfg.labspy_password)
 
-        for dev, dctx in ctx.iteritems():
-            debug('device={}'.format(dev))
-            for k, v in dctx.iteritems():
-                process_id = cfg.get('labspy_{}_{}_id'.format(dev, k))
-                if process_id is None:
-                    debug('process_id not available for {}'.format(k))
-                    continue
-                prev = PREV.get(k)
-                if prev is not None and abs(prev - v) < 0.5:
-                    debug('Not posting. current ={} previous={}'.format(v, prev))
-                    continue
+        dev = 'sensehat'
+        dctx = ctx['sensehat']
 
-                PREV[k] = v
-                url = '{}/measurements/'.format(cfg.labspy_api_url)
-                payload = {'value': v, 'process_info': process_id}
+        debug('device={}'.format(dev))
+        for k, v in dctx.iteritems():
+            process_id = cfg.get('labspy_{}_{}_id'.format(dev, k))
+            if process_id is None:
+                debug('process_id not available for {}'.format(k))
+                continue
+            prev = PREV.get(k)
+            if prev is not None and abs(prev - v) < 0.5:
+                debug('Not posting. current ={} previous={}'.format(v, prev))
+                continue
 
-                resp = requests.post(url, json=payload, auth=auth)
-                if resp.status_code != 201:
-                    debug('url={}'.format(url))
-                    debug('payload={}'.format(payload))
-                    debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
-                    if resp.status_code == 403:
-                        debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
-                    elif resp.status_code in (500, 400):
-                        break
+            PREV[k] = v
+            url = '{}/measurements/'.format(cfg.labspy_api_url)
+            payload = {'value': v, 'process_info': process_id}
+
+            resp = requests.post(url, json=payload, auth=auth)
+            if resp.status_code != 201:
+                debug('url={}'.format(url))
+                debug('payload={}'.format(payload))
+                debug('response {} device_id={} k={} v={}'.format(resp, process_id, k, v))
+                if resp.status_code == 403:
+                    debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
+                elif resp.status_code in (500, 400):
+                    break
 
 
 def led_event(dev, cfg, ctx):
@@ -163,9 +171,11 @@ def assemble_ctx(devs):
     p = shat.get_pressure()
 
     ctx = {'sensehat': {'humidity': h, 'tempH': th, 'tempP': tp, 'atm_pressure': p}}
-    for k, dev in devs['tprobes'].iteritems():
-        ctx[k] = {'temp': dev.get_temperature()}
 
+    tprobes = []
+    for k, dev in devs['tprobes'].iteritems():
+        tprobes.append({'temp': dev.get_temperature(), 'name': k})
+    ctx['tprobes'] = tprobes
     return ctx
 
 

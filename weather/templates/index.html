@@ -26,10 +26,10 @@
         <td>mbars</td>
     </tr>
 
-    {% for k, v in ctx.tprobes.iteritems() %}
+    {% for t in ctx.tprobes %}
         <tr>
-            <td>{{ k }}</td>
-            <td>{{'%0.2f' | format(v|float)}}</td>
+            <td>{{ t.name }}</td>
+            <td>{{'%0.2f' | format(t.temp|float)}}</td>
             <td>C</td>
         </tr>
     {% endfor %}
