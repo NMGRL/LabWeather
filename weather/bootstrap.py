@@ -137,7 +137,7 @@ def labspy_event(cfg, ctx):
 
         dev = 'tprobes'
         debug('labspy post for {}'.format(dev))
-        for pd in ctx[dev].itervalues():
+        for pd in ctx[dev]:
             ret = labspy_measuremnet(cfg, 'tprobe', pd['name'], pd['temp'], auth)
             if ret == 'continue':
                 continue
@@ -146,9 +146,10 @@ def labspy_event(cfg, ctx):
 
 
 def labspy_measuremnet(cfg, dev, k, v, auth):
+    kk = 'labspy_{}_{}_id'.format(dev, k)
     process_id = cfg.get('labspy_{}_{}_id'.format(dev, k))
     if process_id is None:
-        debug('process_id not available for {}'.format(k))
+        debug('process_id not available for {} {}'.format(k, kk))
         return 'continue'
     prev = PREV.get(process_id)
     if prev is not None and abs(prev - v) < cfg.labspy_change_threshold:
