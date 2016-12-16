@@ -25,6 +25,7 @@ import time
 import yaml
 
 from paths import paths
+from temperature_util import to_f
 
 root = '/sys/bus/w1/devices'
 
@@ -51,6 +52,7 @@ def get_display_name(name):
 
 class DS18B20:
     simulation = False
+    units = 'F'
 
     def __init__(self, name):
         self._path = os.path.join(root, name)
@@ -89,8 +91,10 @@ class DS18B20:
             if equals_pos != -1:
                 temp_string = lines[1][equals_pos + 2:]
                 temp_c = float(temp_string) / 1000.0
-
-            return temp_c
+            temp = temp_c
+            if self.units == 'F':
+                temp = to_f(temp)
+            return temp
 
     def _read_raw(self):
         with open(os.path.join(self._path, 'w1_slave'), 'r') as rfile:

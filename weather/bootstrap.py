@@ -24,6 +24,7 @@ from datetime import datetime
 from config import get_configuration
 import webcontext
 from ds18b20 import DS18B20, list_device_names
+from temperature_util import to_f
 
 try:
     from sense_hat import SenseHat
@@ -184,6 +185,9 @@ def assemble_ctx(devs):
     th = shat.get_temperature_from_humidity()
     tp = shat.get_temperature_from_pressure()
     p = shat.get_pressure()
+
+    th = to_f(th)
+    tp = to_f(tp)
 
     ctx = {'sensehat': {'humidity': h, 'tempH': th, 'tempP': tp, 'atm_pressure': p}}
 
