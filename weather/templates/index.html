@@ -9,12 +9,12 @@
     <tr>
         <td>Temperature1</td>
         <td>{{'%0.2f' | format(ctx.sensehat.tempH|float)}}</td>
-        <td>C</td>
+        <td>F</td>
     </tr>
     <tr>
         <td>Temperature2</td>
         <td>{{'%0.2f'| format(ctx.sensehat.tempP|float)}}</td>
-        <td>C</td>
+        <td>F</td>
     </tr>
     <tr>
         <td>Humidity</td>
@@ -31,7 +31,7 @@
         <tr>
             <td>{{ t.display_name }}</td>
             <td>{{'%0.2f' | format(t.temp|float)}}</td>
-            <td>C</td>
+            <td>F</td>
             <td>{{ t.name }}</td>
         </tr>
     {% endfor %}
