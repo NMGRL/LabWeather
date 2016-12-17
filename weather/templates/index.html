@@ -28,12 +28,12 @@
     </tr>
     <tr>
         <td>Outside Temp</td>
-        <td>{{'%0.2f'| format(ctx.outside.temp|float}}</td>
+        <td>{{ ctx.noaa.temp }}</td>
         <td>F</td>
     </tr>
     <tr>
         <td>Outside Humidity</td>
-        <td>{{'%0.2f'| format(ctx.outside.humidity|float}}</td>
+        <td>{{ ctx.noaa.humidity }}</td>
         <td>F</td>
     </tr>
     {% for t in ctx.tprobes %}
