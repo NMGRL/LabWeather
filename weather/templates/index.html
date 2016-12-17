@@ -26,7 +26,16 @@
         <td>{{'%0.2f'| format(ctx.sensehat.atm_pressure|float)}}</td>
         <td>mbars</td>
     </tr>
-
+    <tr>
+        <td>Outside Temp</td>
+        <td>{{'%0.2f'| format(ctx.outside.temp|float}}</td>
+        <td>F</td>
+    </tr>
+    <tr>
+        <td>Outside Humidity</td>
+        <td>{{'%0.2f'| format(ctx.outside.humidity|float}}</td>
+        <td>F</td>
+    </tr>
     {% for t in ctx.tprobes %}
         <tr>
             <td>{{ t.display_name }}</td>

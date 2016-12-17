@@ -42,6 +42,10 @@ class Config:
 
     use_temp_probes = False
 
+    use_noaa = False
+    noaa_lat = 0
+    noaa_lon = 0
+
     def __init__(self, **kw):
         for k, v in kw.iteritems():
             setattr(self, k, v)

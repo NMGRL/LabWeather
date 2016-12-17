@@ -51,13 +51,18 @@ def start_service(cfg):
 
     devices = load_devices(cfg)
     period = cfg.period
+
     while 1:
         ctx = assemble_ctx(devices)
+
+        nctx = assemble_current_weather_ctx(cfg)
+        if nctx:
+            ctx.update(nctx)
+
         console_event(cfg, ctx)
         web_event(cfg, ctx)
         labspy_event(cfg, ctx)
         led_event(devices['sensehat'], cfg, ctx)
-
         time.sleep(period)
 
 
@@ -145,6 +150,15 @@ def labspy_event(cfg, ctx):
             elif ret == 'break':
                 break
 
+        outside_ctx = ctx['outside']
+        if outside_ctx:
+            for a in ('temp', 'humidity'):
+                ret = labspy_measuremnet(cfg, 'outside', a, outside_ctx[a], auth)
+                if ret == 'continue':
+                    continue
+                elif ret == 'break':
+                    break
+
 
 def labspy_measuremnet(cfg, dev, k, v, auth):
     kk = 'labspy_{}_{}_id'.format(dev, k)
@@ -177,6 +191,17 @@ def led_event(dev, cfg, ctx):
         ctx = ctx['sensehat']
         msg = 'Hum: {humidity:0.2f} Th: {tempH:0.2f} Tp: {tempP:0.2f} Atm: {atm_pressure:0.2f}'.format(**ctx)
         dev.show_message(msg, cfg.led_scroll_speed)
+
+
+def assemble_current_weather_ctx(cfg):
+    url = 'http://forecast.weather.gov/MapClick.php?lat={}&lon={}&FcstType=json'.format(cfg.noaa_lat, cfg.noaa_lon)
+    resp = requests.get(url)
+    ctx = {}
+    if resp.status_code == 200:
+        d = resp.json()
+        co = d.get('currentobservation')
+        ctx['outside'] = {'temp': co.get('Temp'), 'humidity': co.get('Relh')}
+    return ctx
 
 
 def assemble_ctx(devs):
