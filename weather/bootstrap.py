@@ -80,7 +80,10 @@ def load_devices(cfg):
 
 
 def log(msg, tag):
-    print '{} - {} - {}'.format(datetime.now().isoformat(), tag, msg)
+    txt = '{} - {} - {}'.format(datetime.now().isoformat(), tag, msg)
+    print txt
+    with open('weather.log', 'a') as wfile:
+        wfile.write('{}\n'.format(txt))
 
 
 def info(msg):
