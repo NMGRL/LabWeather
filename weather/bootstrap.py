@@ -171,7 +171,7 @@ def labspy_measuremnet(cfg, dev, k, v, auth):
         return 'continue'
     prev = PREV.get(process_id)
     if prev is not None and abs(prev - v) < cfg.labspy_change_threshold:
-        debug('Not posting. {}({}) current ={} previous={}'.format(dev, k, v, prev))
+        #debug('Not posting. {}({}) current ={} previous={}'.format(dev, k, v, prev))
         return 'continue'
 
     PREV[process_id] = v
@@ -187,6 +187,8 @@ def labspy_measuremnet(cfg, dev, k, v, auth):
             debug('username={}, password={}'.format(cfg.labspy_username, cfg.labspy_password))
         elif resp.status_code in (500, 400):
             return 'break'
+    else:
+        info('posted id={} k={} v={}'.format(process_id, k, v))
 
 
 def led_event(dev, cfg, ctx):
