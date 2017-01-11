@@ -55,7 +55,7 @@ def start_service(cfg):
     while 1:
         ctx = assemble_ctx(devices)
 
-        nctx = assemble_current_weather_ctx(cfg)
+        nctx = assemble_noaa_ctx(cfg)
         if nctx:
             ctx.update(nctx)
 
@@ -153,10 +153,10 @@ def labspy_event(cfg, ctx):
             elif ret == 'break':
                 break
 
-        outside_ctx = ctx['outside']
-        if outside_ctx:
+        noaa_ctx = ctx['noaa']
+        if noaa_ctx:
             for a in ('temp', 'humidity'):
-                ret = labspy_measuremnet(cfg, 'outside', a, outside_ctx[a], auth)
+                ret = labspy_measuremnet(cfg, 'noaa', a, noaa_ctx[a], auth)
                 if ret == 'continue':
                     continue
                 elif ret == 'break':
@@ -171,7 +171,7 @@ def labspy_measuremnet(cfg, dev, k, v, auth):
         return 'continue'
     prev = PREV.get(process_id)
     if prev is not None and abs(prev - v) < cfg.labspy_change_threshold:
-        debug('Not posting. current ={} previous={}'.format(v, prev))
+        debug('Not posting. {}({}) current ={} previous={}'.format(dev, k, v, prev))
         return 'continue'
 
     PREV[process_id] = v
@@ -196,14 +196,14 @@ def led_event(dev, cfg, ctx):
         dev.show_message(msg, cfg.led_scroll_speed)
 
 
-def assemble_current_weather_ctx(cfg):
+def assemble_noaa_ctx(cfg):
     url = 'http://forecast.weather.gov/MapClick.php?lat={}&lon={}&FcstType=json'.format(cfg.noaa_lat, cfg.noaa_lon)
     resp = requests.get(url)
     ctx = {}
     if resp.status_code == 200:
         d = resp.json()
         co = d.get('currentobservation')
-        ctx['outside'] = {'temp': co.get('Temp'), 'humidity': co.get('Relh')}
+        ctx['noaa'] = {'temp': int(co.get('Temp')), 'humidity': int(co.get('Relh'))}
     return ctx
 
 
